@@ -3,10 +3,12 @@ const dotenv = require('dotenv');
 const { dbConnection } = require('./config/connection');
 const { routeManager } = require('./routes/routeMger');
 const bodyParser = require('body-parser')
+//const Cors = require('cors')
 const app = express();
 const port = 3000;
 dotenv.config()
-
+ 
+//app.use(Cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 app.use('/', routeManager)

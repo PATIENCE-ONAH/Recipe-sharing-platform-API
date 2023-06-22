@@ -1,66 +1,74 @@
 const { User } = require("../models/user");
-const bycript = require('bcryptjs')
-const saltRounds = bycript.genSaltSync(12)
 const jsonwebtoken = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+//const saltRounds = bcrypt.genSaltSync(10)
 const secret = "secret"
 
 const createUser = async (req, res) =>{
     const {user, email, password} = req.body;
 //Ensuring the user enters all the field
     if (!user || !email || !password) 
-    return res.status(200).json([{'message': 'All the field are required'}])
+    return res.status(400).json([{'message': 'All the field are required'}])
     //checking for existing user
     const userExist = await User.findOne({userName: user}).exec()
     if (userExist)
     return res.status(200).json([{'Message': 'Username already existing'}])
-
+    
     try {
-        const result = await User.create({
-            "userName": user,
-            "Email": email,
-            "Password": bycript.hashSync(password, saltRounds)
-        });
-         console.log(result)
-         res.status(200).json([{'Message': `Success ${user} has been created`}])
-        // .then(rs => {
-        //     console.log(rs)
+    const hashPwd = await bcrypt.hash(password, 10)
+
+    console.log('hashed Password:',hashPwd)
+
+    const newUser = {
+        "userName": user,
+        "Email": email,
+        "Password": hashPwd
+    }
+        const result = await User.create(newUser);
+
+         console.log('result:',result, newUser)
+         res.status(200).json([{'Message': "Your account has been created succesfully"}])
     } catch(err){
         console.log(err)
     }
 }
+
 // User login Function
 
 const userLogin = async (req, res) => {
-    const {user, password} = req.body;
-    
+    const {user,password} = req.body;
+    try {
+        if (!user || !password){
+            res.status(500).json({message: "Username or password required"});
+        }    
+        
+    const findUser = await User.findOne({userName: user});
 
+    if (!findUser) {
+         res.status(200).json({message: 'User not found'})
+    } else {
+        const verifyPassword = await bcrypt.compare(password, findUser.Password )
+
+        console.log(password, findUser.Password)
+        console.log(verifyPassword)
+
+        if (!verifyPassword){
+             res.status(401).json({message: 'Invalid password'})
+        } else {
+            const token = jsonwebtoken.sign({user: findUser.userName, id: findUser._id}, secret)
+            res.status(200).json({ message: `${user} logged in successfully`,'Token': token})
+
+        }
+    }
+    } catch (err){
+        console.log(err)
+        res.status(500).json({err})
+    }
+    
+    // return res.status(200).json([{'Message': 'Username already existing'}])
 }
 
 
-// const userLogin = async (req, res) => {
-//     const user = req.body.userName;
-//     const password = req.body.Password
-//     User.findOne({
-//         where:{
-//             userName: user
-//         }
-//     }).then(rs => {
-//     if (rs){
-//         const passwordVerification = bycript.compareSync(password, rs.dataValues.password)
-//         if (passwordVerification == true){
-//             const token = jsonwebtoken.sign(rs.dataValues,secret)
-//             console.log(token)
-//             res.status(200).json({message: token})
-//         }else{
-//             res.status(200).json({message: "Invalid Password"})
-//         }
 
-//     }else{
-//         res.status(200).json({message: "Password Invalid"})
-//     }
-//     }).catch(err => {
-//         console.log(err)
-//     })
-// }
 
 module.exports = {createUser, userLogin}
