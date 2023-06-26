@@ -5,7 +5,6 @@ const { routeManager } = require('./routes/routeMger');
 const bodyParser = require('body-parser')
 //const Cors = require('cors')
 const app = express();
-const port = 3000;
 dotenv.config()
  
 //app.use(Cors())
@@ -18,8 +17,8 @@ const startServer = async () => {
         // connect to the database
         dbConnection(process.env.ATLAS_URL);
 
-        app.listen(port, () =>{
-            console.log('server is running')
+        app.listen(process.env.PORT, () =>{
+            console.log(`server is running on port ${process.env.PORT}`)
         })
         ;
     } catch (error) {
