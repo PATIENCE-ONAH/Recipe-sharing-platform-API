@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv')
 dotenv.config()
 
-const uri = process.env.ATLAS_URI//"mongodb+srv://Ifypat:PIOpio@recipe-sharing-platform.mhskzmm.mongodb.net/"
+const uri = process.env.ATLAS_URI
 
 const dbConnection = () => {
     mongoose.connect(uri, {useNewUrlParser: true,useUnifiedTopology: true})

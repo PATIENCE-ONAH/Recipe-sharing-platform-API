@@ -1,8 +1,9 @@
 const { User } = require("../models/user");
 const jsonwebtoken = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+const { errorResponse } = require("../errors-Handler/client-error");
+const { successResponse } = require("../success-Handler/client_success");
 //const saltRounds = bcrypt.genSaltSync(10)
-const secret = "secret"
 
 const createUser = async (req, res) =>{
     const {user, email, password} = req.body;
@@ -12,6 +13,7 @@ const createUser = async (req, res) =>{
     //checking for existing user
     const userExist = await User.findOne({userName: user})
     if (userExist)
+    // return errorResponse("Username already existing", 400)
     return res.status(200).json([{'Message': 'Username already existing'}])
     
     try {
@@ -25,10 +27,10 @@ const createUser = async (req, res) =>{
         "Password": hashPwd
     }
         const result = await User.create(newUser);
-
          console.log('result:',result, newUser)
-         res.status(201).json([{'Message': "Your account has been created succesfully"}])
+         return successResponse(res, "Your account has been created succesfully", 201 )
     } catch(err){
+       //return errorResponse(err.message, 409)
         console.log(err)
     }
 }
@@ -53,10 +55,12 @@ const userLogin = async (req, res) => {
         console.log(verifyPassword)
 
         if (!verifyPassword){
+        //    return errorResponse('Invalid password', 400)
              res.status(401).json({message: 'Invalid password'})
         } else {
-            const token = jsonwebtoken.sign({user: findUser.userName, id: findUser._id}, secret)
-            res.status(200).json({ message: `${user} logged in successfully`,'Token': token})
+            const token = jsonwebtoken.sign({user: findUser.userName, id: findUser._id}, process.env.SECRET_JWT)
+            //console.log(process.env.SECRET_JWT)
+            return successResponse(res, "logged in successfully", 200,)
 
         }
     }
