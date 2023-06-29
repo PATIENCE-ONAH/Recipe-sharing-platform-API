@@ -5,18 +5,31 @@ const { errorResponse } = require("../errors-Handler/client-error");
 const { successResponse } = require("../success-Handler/client_success");
 //const saltRounds = bcrypt.genSaltSync(10)
 
+const getAllUser = async (req, res) => {
+    try {
+        const getUsers = await User.find()
+        res.status(200).json(getUsers)
+    } catch(err){
+        res.status(400).json([{'message': 'server error'}])
+    }
+};
+
 const createUser = async (req, res) =>{
+    try {
     const {user, email, password} = req.body;
 //Ensuring the user enters all the field
-    if (!user || !email || !password) 
-    return res.status(400).json([{'message': 'All the field are required'}])
+    if (!user || !email || !password)
+    throw new Error('All the field are required') 
+    // return res.status(400).json([{'message': 'All the field are required'}])
+    
     //checking for existing user
     const userExist = await User.findOne({userName: user})
     if (userExist)
+    throw new Error('Username already existing')
     // return errorResponse("Username already existing", 400)
-    return res.status(200).json([{'Message': 'Username already existing'}])
+    // return res.status(200).json([{'Message': 'Username already existing'}])
     
-    try {
+    
     const hashPwd = await bcrypt.hash(password, 10)
 
     console.log('hashed Password:',hashPwd)
@@ -29,9 +42,9 @@ const createUser = async (req, res) =>{
         const result = await User.create(newUser);
          console.log('result:',result, newUser)
          return successResponse(res, "Your account has been created succesfully", 201 )
-    } catch(err){
-       //return errorResponse(err.message, 409)
-        console.log(err)
+    } catch(error){
+        return errorResponse(error.message, 409)
+        console.log(error)
     }
 }
 
@@ -47,12 +60,12 @@ const userLogin = async (req, res) => {
     const findUser = await User.findOne({userName: user});
 
     if (!findUser) {
-         res.status(200).json({message: 'User not found'})
+        throw new Error(`User not found`)
+       //return errorResponse('User not found', 400)
+        //res.status(400).json({message: 'User not found'})
     } else {
         const verifyPassword = await bcrypt.compare(password, findUser.Password )
-
-        console.log(password, findUser.Password)
-        console.log(verifyPassword)
+        // console.log(password, findUser.Password)
 
         if (!verifyPassword){
         //    return errorResponse('Invalid password', 400)
@@ -64,15 +77,35 @@ const userLogin = async (req, res) => {
 
         }
     }
-    } catch (err){
-        console.log(err)
-        res.status(500).json({err})
+    } catch (error){
+        return errorResponse(error.message, 409)
+        // console.log(err)
+        // res.status(500).json({err})
     }
     
-    // return res.status(200).json([{'Message': 'Username already existing'}])
+}
+
+const updateUser = async (req, res) =>{
+    try{
+        const {userId} = req.params
+        const {user, email, password} = req.body
+        const userUpdate = await User.findById(userId);
+        console.log(userId)
+        if (!userUpdate) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        userUpdate.userName = user
+        userUpdate.Email = email
+        userUpdate.Password = password
+        await userUpdate.Update()
+    
+        // await User.findByIdAndUpdate({_id: userId}, {userName, Email, Password})
+        res.status(200).json({message: "success"});
+    } catch(error) {
+        res.status(400).json([{'message': 'server error'}])
+    }
 }
 
 
 
-
-module.exports = {createUser, userLogin}
+module.exports = {getAllUser, createUser, userLogin, updateUser}
