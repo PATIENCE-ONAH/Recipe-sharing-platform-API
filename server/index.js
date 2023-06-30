@@ -2,7 +2,8 @@ const express = require('express');
 const dotenv = require('dotenv');
 const { dbConnection } = require('./config/connection');
 const { routeManager } = require('./routes/routeMger');
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+// const { errorResponse } = require('./errors-Handler/client-error');
 //const Cors = require('cors')
 const app = express();
 dotenv.config()
@@ -11,6 +12,7 @@ dotenv.config()
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 app.use('/', routeManager)
+// app.use(errorResponse)
 
 const startServer = async () => {
     try {

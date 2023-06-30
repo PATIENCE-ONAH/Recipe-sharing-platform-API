@@ -19,32 +19,31 @@ const createUser = async (req, res) =>{
     const {user, email, password} = req.body;
 //Ensuring the user enters all the field
     if (!user || !email || !password)
-    throw new Error('All the field are required') 
-    // return res.status(400).json([{'message': 'All the field are required'}])
+    //throw new Error('All the fields are required')
+    return errorResponse(res, 'All the fields are required', 400) 
     
     //checking for existing user
-    const userExist = await User.findOne({userName: user})
+    const userExist = await User.findOne({username: user})
     if (userExist)
-    throw new Error('Username already existing')
-    // return errorResponse("Username already existing", 400)
-    // return res.status(200).json([{'Message': 'Username already existing'}])
-    
+    // throw new Error('Username already existing')
+    return errorResponse(res, "Username already existing", 409)    
     
     const hashPwd = await bcrypt.hash(password, 10)
 
-    console.log('hashed Password:',hashPwd)
+    //console.log('hashed Password:',hashPwd)
 
     const newUser = {
-        "userName": user,
-        "Email": email,
-        "Password": hashPwd
+        "username": user,
+        "email": email,
+        "password": hashPwd
     }
         const result = await User.create(newUser);
          console.log('result:',result, newUser)
          return successResponse(res, "Your account has been created succesfully", 201 )
     } catch(error){
-        return errorResponse(error.message, 409)
-        console.log(error)
+        console.log(error.message)
+        return errorResponse(res, error.message,false, 500);
+               
     }
 }
 
@@ -54,33 +53,34 @@ const userLogin = async (req, res) => {
     const {user,password} = req.body;
     try {
         if (!user || !password){
-            res.status(500).json({message: "Username or password required"});
+            return errorResponse(res, 'Email or Password required', 400)
+            // throw new Error('Username or password required')
+            //res.status(500).json({message: "Username or password required"});
         }    
         
-    const findUser = await User.findOne({userName: user});
+    const findUser = await User.findOne({username: user});
 
     if (!findUser) {
-        throw new Error(`User not found`)
-       //return errorResponse('User not found', 400)
+        //throw new Error('User not found')
+        return errorResponse(res, 'User not found', 404)
         //res.status(400).json({message: 'User not found'})
     } else {
-        const verifyPassword = await bcrypt.compare(password, findUser.Password )
+        const verifyPassword = await bcrypt.compare(password, findUser.password )
         // console.log(password, findUser.Password)
 
         if (!verifyPassword){
-        //    return errorResponse('Invalid password', 400)
-             res.status(401).json({message: 'Invalid password'})
+           return errorResponse(res,'Invalid password', 401)
+            //  res.status(401).json({message: 'Invalid password'})
         } else {
-            const token = jsonwebtoken.sign({user: findUser.userName, id: findUser._id}, process.env.SECRET_JWT)
+            const token = jsonwebtoken.sign({user: findUser.username, id: findUser._id}, process.env.SECRET_JWT)
             //console.log(process.env.SECRET_JWT)
-            return successResponse(res, "logged in successfully", 200,)
+            return successResponse(res, "logged in successfully",{token}, 200,)
 
         }
     }
     } catch (error){
-        return errorResponse(error.message, 409)
+      return  errorResponse(res, error.message,false, 500)
         // console.log(err)
-        // res.status(500).json({err})
     }
     
 }
