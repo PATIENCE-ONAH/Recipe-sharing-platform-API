@@ -6,7 +6,7 @@ const routeManager = express.Router();
 routeManager.get('/getusers', getAllUser)
 routeManager.post('/register', createUser);
 routeManager.post('/auth', userLogin)
-routeManager.put('/:userId', updateUser)
+routeManager.put('/update/:id', updateUser)
 
 
 

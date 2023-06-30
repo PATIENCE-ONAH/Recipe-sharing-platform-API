@@ -1,8 +1,10 @@
+const mongoose = require('mongoose')
 const { User } = require("../models/user");
 const jsonwebtoken = require('jsonwebtoken')
 const bcrypt = require('bcryptjs');
 const { errorResponse } = require("../errors-Handler/client-error");
 const { successResponse } = require("../success-Handler/client_success");
+// const ObjectId = mongoose.Types.ObjectId;
 //const saltRounds = bcrypt.genSaltSync(10)
 
 const getAllUser = async (req, res) => {
@@ -55,7 +57,6 @@ const userLogin = async (req, res) => {
         if (!user || !password){
             return errorResponse(res, 'Email or Password required', 400)
             // throw new Error('Username or password required')
-            //res.status(500).json({message: "Username or password required"});
         }    
         
     const findUser = await User.findOne({username: user});
@@ -63,14 +64,12 @@ const userLogin = async (req, res) => {
     if (!findUser) {
         //throw new Error('User not found')
         return errorResponse(res, 'User not found', 404)
-        //res.status(400).json({message: 'User not found'})
     } else {
         const verifyPassword = await bcrypt.compare(password, findUser.password )
         // console.log(password, findUser.Password)
 
         if (!verifyPassword){
            return errorResponse(res,'Invalid password', 401)
-            //  res.status(401).json({message: 'Invalid password'})
         } else {
             const token = jsonwebtoken.sign({user: findUser.username, id: findUser._id}, process.env.SECRET_JWT)
             //console.log(process.env.SECRET_JWT)
@@ -87,22 +86,31 @@ const userLogin = async (req, res) => {
 
 const updateUser = async (req, res) =>{
     try{
-        const {userId} = req.params
-        const {user, email, password} = req.body
-        const userUpdate = await User.findById(userId);
-        console.log(userId)
-        if (!userUpdate) {
-          return res.status(404).json({ message: 'User not found' });
+        const {id} = req.params;
+        const {user, email, password} = req.body;
+        console.log('Received ID:', id); 
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return errorResponse(res, 'Invalid user ID', false, 400);
         }
-        userUpdate.userName = user
-        userUpdate.Email = email
-        userUpdate.Password = password
-        await userUpdate.Update()
-    
-        // await User.findByIdAndUpdate({_id: userId}, {userName, Email, Password})
-        res.status(200).json({message: "success"});
+        // const userId =  mongoose.Types.ObjectId(id);
+    const userUpdate = await User.findById({_id:id});
+        console.log(id)
+        console.log(userUpdate)
+        if (!userUpdate) {
+            return errorResponse(res, 'User not found', 404)
+          //return res.status(404).json({ message: 'User not found' });
+        }
+        userUpdate.username = user
+        userUpdate.email = email
+        userUpdate.password = password
+        await userUpdate.save()
+        
+        // await User.findByIdAndUpdate({_id: userId}, {username, email, password})
+        return successResponse(res, "updated successfully", 200,)
+        // res.status(200).json({message: "success"});
     } catch(error) {
-        res.status(400).json([{'message': 'server error'}])
+        return  errorResponse(res, error.message,false, 500)
+        // res.status(500).json([{'message': 'server error'}])
     }
 }
 
